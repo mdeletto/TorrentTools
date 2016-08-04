@@ -63,6 +63,7 @@ def IR_download_variant_zip(basename,variant_link,authorization_key):
     else:
         try:
             proc = subprocess.Popen(["""curl -k -H "Authorization:%s" "%s" 2> /dev/null -o IR.zip; unzip IR.zip && unzip %s.zip; cp ./Variants/*/*.vcf %s.vcf && cp ./Variants/*/*.tsv %s.tsv; rm -rf %s.zip QC Variants Workflow_Settings""" % (authorization_key,variant_link,basename,basename,basename,basename)],shell=True,stdout=subprocess.PIPE)
+            output, err = proc.communicate()
         except:
             print "Unable to download and/or unzip IonReporter files.  Aborting..."
             sys.exit(1)
@@ -119,7 +120,7 @@ elif mode == "BATCH":
                     analysis_id = split_line[1]
                 except:
                     analysis_id = None
-                    print "WARNING: No analysis ID provided."
+                    print "WARNING: No analysis ID provided w/ %s" % analysis_name
                     print "WARNING: Proceeding with only using analysis name.  This shouldn't be a problem."
                     
                 if analysis_id is None:
