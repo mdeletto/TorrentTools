@@ -7,29 +7,6 @@ import argparse
 import os
 global args
 
-desc="""When given a list of files and coordinates, this script will attempt to load all files in a local IGV instance and take snapshots at select loci. Requires IGV already be open and able to listen on port 60151."""
-parser = argparse.ArgumentParser(description=desc)
-parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-
-general_arguments = parser.add_argument_group('GENERAL OPTIONS')
-general_arguments.add_argument("--files","-f", help="Files to load into IGV as tracks.  Please see IGV's website for compatible filetypes",dest='input_files',action='append',nargs='+', default=None)
-general_arguments.add_argument("--loci","-l", help="Files to load into IGV as tracks.  Please see IGV's website for compatible filetypes",dest='loci',action='store',nargs='+',default=None)
-general_arguments.add_argument("--output_dir","-d", help="Full path to output directory.  The script will create this directory if it does not exist.",dest='output_dir',action='store',default=os.getcwd()+"/igv")
-general_arguments.add_argument("--port","-p", help="Port that IGV communicates over",dest='port',action='store',nargs=1,default=60151)
-general_arguments.add_argument("--ip_address","-a", help="IP address of IGV instance",dest='ip_address',action='store',nargs=1, default="127.0.0.1")
-general_arguments.add_argument("--force_loading", help="Force loading of all input files (i.e. load even if file extension check fails)",dest='force_loading',action='store_true',default=False)
-general_arguments.add_argument("--track_mode", help="Choose how IGV will display tracks.",dest='track_mode',action='store',choices=['collapse','expand','squish'], default='expand')
-
-args = parser.parse_args()
-
-if args.input_files is not None:
-    args.input_files = [item for sublist in args.input_files for item in sublist]
-# if args.loci is not None:
-#     print type(args.loci)
-#     if type(args.loci) is list:
-#         args.loci = [item for sublist in args.loci for item in sublist]
-
-
 def output_directory_handling(output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -130,35 +107,58 @@ def parse_input_files(socket, files, force_loading):
     else:
         autodetect_input_file_format(socket, files, force_loading)
 
-TCP_IP = args.ip_address
-TCP_PORT = args.port
+def main():
 
-### CONNECT TO IGV PORT ###
-print "ADDRESS:", TCP_IP
-print "PORT:", TCP_PORT
-# Connect to socket
-socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-socket.connect( (TCP_IP, TCP_PORT) )
+    global socket
+    
+    desc="""When given a list of files and coordinates, this script will attempt to load all files in a local IGV instance and take snapshots at select loci. Requires IGV already be open and able to listen on port 60151."""
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    
+    general_arguments = parser.add_argument_group('GENERAL OPTIONS')
+    general_arguments.add_argument("--files","-f", help="Files to load into IGV as tracks.  Please see IGV's website for compatible filetypes",dest='input_files',action='append',nargs='+', default=None)
+    general_arguments.add_argument("--loci","-l", help="Files to load into IGV as tracks.  Please see IGV's website for compatible filetypes",dest='loci',action='store',nargs='+',default=None)
+    general_arguments.add_argument("--output_dir","-d", help="Full path to output directory.  The script will create this directory if it does not exist.",dest='output_dir',action='store',default=os.getcwd()+"/igv")
+    general_arguments.add_argument("--port","-p", help="Port that IGV communicates over",dest='port',action='store',nargs=1,default=60151)
+    general_arguments.add_argument("--ip_address","-a", help="IP address of IGV instance",dest='ip_address',action='store',nargs=1, default="127.0.0.1")
+    general_arguments.add_argument("--force_loading", help="Force loading of all input files (i.e. load even if file extension check fails)",dest='force_loading',action='store_true',default=False)
+    general_arguments.add_argument("--track_mode", help="Choose how IGV will display tracks.",dest='track_mode',action='store',choices=['collapse','expand','squish'], default='expand')
+    
+    args = parser.parse_args()
+    
+    if args.input_files is not None:
+        args.input_files = [item for sublist in args.input_files for item in sublist]
 
-### INPUT FILE PROCESSING ###
-print "INPUT FILES:", args.input_files
-# load files
-parse_input_files(socket, args.input_files, args.force_loading)
-manage_tracks(socket, args.track_mode)
+    TCP_IP = args.ip_address
+    TCP_PORT = args.port
+    
+    ### CONNECT TO IGV PORT ###
+    print "ADDRESS:", TCP_IP
+    print "PORT:", TCP_PORT
+    # Connect to socket
+    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket.connect( (TCP_IP, TCP_PORT) )
+    
+    ### INPUT FILE PROCESSING ###
+    print "INPUT FILES:", args.input_files
+    # load files
+    parse_input_files(socket, args.input_files, args.force_loading)
+    manage_tracks(socket, args.track_mode)
+    
+    ### IGV SNAPSHOT DIRECTORY HANDLING ###
+    print "IGV SNAPSHOT OUTPUT DIR:", args.output_dir              
+    # Change cwd to output directory.  Directory is created if it doesn't exist
+    output_directory_handling(args.output_dir)
+    # Set snapshot directory.
+    set_snapshot_dir(socket, args.output_dir)
+    
+    ### LOAD LOCI ###
+    print "LOCI TO LOAD:", args.loci
+    # Loop over loci and take a snapshot
+    go_to_locus_and_snapshot(socket, args.loci)
 
-### IGV SNAPSHOT DIRECTORY HANDLING ###
-print "IGV SNAPSHOT OUTPUT DIR:", args.output_dir              
-# Change cwd to output directory.  Directory is created if it doesn't exist
-output_directory_handling(args.output_dir)
-# Set snapshot directory.
-set_snapshot_dir(socket, args.output_dir)
-
-### LOAD LOCI ###
-print "LOCI TO LOAD:", args.loci
-# Loop over loci and take a snapshot
-go_to_locus_and_snapshot(socket, args.loci)
-
-
+if __name__ == '__main__':
+    main()
 
 
 
