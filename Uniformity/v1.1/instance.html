@@ -1,0 +1,102 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+
+  <!--java script for interacting with the RESTful API-->
+  <script type="text/javascript" src="/site_media/jquery/js/jquery-1.6.1.min.js"></script>
+
+  <!--page style-->
+  <style type='text/css'> 
+    #formwrap {
+     line-height: 2em;
+     background: #eef;
+     margin: 10px;
+     padding: 10px;
+     height: 130px;
+     text-align: center;
+    }
+
+    body {
+     font-family: "Lucida Grande", "Lucida Sans Unicode", Verdana, Arial, Helvetica, sans-serif;
+     font-size: 14px;
+    }
+  </style> 
+  
+  <script type='text/javascript'> 
+    //process form to grab html objects and turn them into json objects 
+    $(function() {
+     $.fn.serializeObject = function(){
+      var o = {};
+      var a = this.serializeArray();
+      
+      $.each(a, function() {
+       if (o[this.name] != null) {
+        if (!o[this.name].push) {
+         o[this.name] = [o[this.name]];
+        }
+       
+        o[this.name].push(this.value || '');
+       } else if(this.name == "file") {
+       
+       o[this.name] = [this.value || ''];	
+      }	
+      else {
+       o[this.name] = this.value || '';
+      }
+     });
+ 
+     return o;
+    };
+
+    //use the RESTful API to post the json variable
+    $(function() {
+     $('#postbutton').click(function() {
+      //the name of the form used here, in this case "inputform" should match the one in the html code
+      obj =  $('#inputform').serializeObject();
+    
+      pluginAPIJSON = { "plugin" : [TB_plugin.fields.name], "pluginconfig" : obj };
+      pluginAPIJSON = JSON.stringify(pluginAPIJSON); 
+      pluginURL = "/rundb/api/v1/results/" + TB_result + "/plugin/";
+    
+      $.ajax({
+       type: 'POST',
+       url: pluginURL,
+       contentType: "application/json; charset=utf-8",
+       success: function(data) {
+        $("#json_result").html('<div style="text-align: center;"><img src="/site_media/jquery/colorbox/images/loading.gif" alt="Running Plugin" style="float:center"></img><p>Starting the Plugin...</p></div>');
+        setTimeout("parent.$.fn.colorbox.close()" ,2000); },
+        data: pluginAPIJSON,
+        dataType: "json"
+       });
+      });
+     })
+    });
+  </script> 
+</head> 
+
+<!--build the html page for what the user sees-->
+<body> 
+  <b><center><font size="6">Uniformity v1.1</font></center</b>
+  <div id="formwrap">
+
+    <!-- the form name here, in this case "inputform" should match the one used in the put java script -->
+    <form id="inputform" name="inputform" align="center" onsubmit="return validateForm()"> 
+      <!-- two json variables will be created an passed to the plugin, input_text and input_color -->
+      Targeted Regions: </td><td><select name="input_regions">
+	<option value="CCP" selected="selected">409 Gene Comprehensive Cancer Panel</option>
+	<option value="OCP">Oncomine Cancer Panel</option>
+	<option value="WhEx">AmpliSeq Exome</option>
+      </select><br>
+      Gender: </td><td><select name="input_gender">
+	<option value="Male">Male</option>
+	<option value="Female" selected="selected">Female</option>
+      </select>
+    </form> 
+
+    <input id="postbutton" type="submit" value="Submit"> 
+  </div>
+
+  <div id="json_result"> </div>       
+</body> 
+</html> 
+ 
